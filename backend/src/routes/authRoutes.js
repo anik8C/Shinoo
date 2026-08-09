@@ -3,7 +3,7 @@ import { signupController, loginController, logoutController } from "../controll
 
 const router = express.Router();
 
-router.get("/signup", signupController);
+router.post("/signup", signupController);
 router.get("/login", loginController);
 router.get("/logout", logoutController);
 
