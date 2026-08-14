@@ -56,14 +56,39 @@ export async function signupController(req, res) {
     }
 }
 
-export function loginController(req, res) {
+export async function loginController(req, res) {
 
-    res.send("login endpoint")
+    const { email, password } = req.body;
 
+    if (!email || !password) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+        return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isCorrectPassword = await bcrypt.compare(password, user.password);
+
+    if (!isCorrectPassword) {
+        return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    generateToken(user._id, res);
+
+    res.status(200).json({
+        message: "Login successful",
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+    });
 }
 
-export function logoutController(req, res) {
+export async function logoutController(req, res) {
 
-    res.send("logout endpoint")
+    res.cookie("jwt", "", { maxAge: 0 });
+    return res.status(200).json({ message: "Logout successful" });
 
 }
