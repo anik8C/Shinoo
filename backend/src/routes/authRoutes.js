@@ -4,7 +4,8 @@ import { signupController, loginController, logoutController } from "../controll
 const router = express.Router();
 
 router.post("/signup", signupController);
-router.get("/login", loginController);
-router.get("/logout", logoutController);
+router.post("/login", loginController);
+router.post("/logout", logoutController);
+
 
 export default router;

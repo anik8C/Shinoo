@@ -1,25 +1,23 @@
 import express from "express";
 import "dotenv/config";
 import path from "path";
+import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/authRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import { connectDB } from "./lib/db.js";
-
-
-// console.log("Environment Variables:", {
-//     PORT: process.env.PORT,
-//     MONGO_URI: process.env.MONGO_URI,
-//     NODE_ENV: process.env.NODE_ENV
-// });
 
 const app = express();
 const __dirname = path.resolve();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/user", userRoutes);
+
 
 // make ready for deployment
 if (process.env.NODE_ENV === "development") {
