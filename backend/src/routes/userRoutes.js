@@ -1,9 +1,10 @@
 import express from "express";
-import { updateProfileController } from "../controllers/userController.js";
-import protectRouteMiddleware from "../middlewares/protectRouteMiddleware.js";
+import { updateProfilePictureController } from "../controllers/userController.js";
+import {protectRoute} from "../middlewares/protectRouteMiddleware.js";
+import { arcjetProtection } from "../middlewares/arcjetMiddleware.js";
 
 const router = express.Router();
 
-router.put("/update-profile", protectRouteMiddleware, updateProfileController);
+router.put("/update-profile", arcjetProtection, protectRoute, updateProfilePictureController);
 
 export default router;
