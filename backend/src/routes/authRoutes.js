@@ -1,6 +1,6 @@
 import express from "express";
 import { signupController, loginController, logoutController } from "../controllers/authController.js";
-import { arcjetProtection } from "../middlewares/arcjetMiddleware.js";
+import { arcjetProtection } from "../middlewares/arcjetProtection.js";
 
 const router = express.Router();
 
