@@ -1,7 +1,7 @@
 import express from "express";
 import { updateProfilePictureController } from "../controllers/userController.js";
-import {protectRoute} from "../middlewares/protectRouteMiddleware.js";
-import { arcjetProtection } from "../middlewares/arcjetMiddleware.js";
+import { protectRoute } from "../middlewares/protectRoute.js";
+import { arcjetProtection } from "../middlewares/arcjetProtection.js";
 
 const router = express.Router();
 
