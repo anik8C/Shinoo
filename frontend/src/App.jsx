@@ -6,12 +6,14 @@ import SignUpPage from "./pages/SignUpPage";
 import { useAuthStore } from "./store/useAuthStore.js";
 import PageLoader from "./components/PageLoader.jsx";
 
+import { Toaster } from "react-hot-toast";
+
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   console.log({ authUser });
 
@@ -26,7 +28,7 @@ function App() {
       <Routes>
         <Route
           path="/"
-          element={authUser ? <ChatPage /> : <Navigate to={"/login"} />}
+          element={authUser ? <ChatPage /> : <Navigate to={"/signup"} />}
         />
         <Route
           path="/signup"
@@ -37,6 +39,7 @@ function App() {
           element={authUser ? <Navigate to={"/"} /> : <LoginPage />}
         />
       </Routes>
+      <Toaster />
     </div>
   );
 }
