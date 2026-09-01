@@ -3,7 +3,7 @@ import cloudinary from "../lib/cloudinary.js";
 
 export const updateProfilePictureController = async (req, res) => {
     try {
-        const { profilePic } = req.file;
+        const { profilePic } = req.body;
 
         if (!profilePic) {
             return res.status(400).json({ message: "Profile picture is required" });
@@ -20,7 +20,7 @@ export const updateProfilePictureController = async (req, res) => {
             { new: true }
         ).select("-password");
 
-        return res.status(200).json({ message: "Profile picture updated successfully", user: updatedUser });
+        return res.status(200).json(updatedUser);
 
     } catch (error) {
         console.error("Error updating profile picture:", error);
