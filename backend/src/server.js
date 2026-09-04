@@ -1,6 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import path from "path";
+import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
@@ -10,7 +11,8 @@ import userRoutes from "./routes/userRoutes.js";
 import { connectDB } from "./lib/db.js";
 
 const app = express();
-const __dirname = path.resolve();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistPath = path.join(__dirname, "../../frontend/dist");
 
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "5mb" }));
@@ -24,9 +26,9 @@ app.use("/api/user", userRoutes);
 
 // make ready for deployment
 if (process.env.NODE_ENV === "production") {
-    app.use(express.static(path.join(__dirname, "../frontend/dist")));
+    app.use(express.static(frontendDistPath));
     app.get("*", (_, res) => {
-        res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+        res.sendFile(path.join(frontendDistPath, "index.html"));
     });
 }
 
