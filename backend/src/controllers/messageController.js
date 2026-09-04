@@ -85,7 +85,9 @@ export async function getAllChatPartners(req, res) {
             )
         ];
 
-        return res.status(200).json(chatPartnerIds);
+        const chatPartners = await userModel.find({ _id: { $in: chatPartnerIds } }).select("-password");
+
+        return res.status(200).json(chatPartners);
     }
 
     catch (error) {
