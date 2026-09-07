@@ -14,21 +14,6 @@ function ChatsList() {
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (chats.length === 0) return <NoChatsFound />;
 
-  chats.map((chat) => {
-    console.log("chat:", chat);
-    console.log("id:", chat._id);
-
-    return (
-      <div
-        key={chat._id}
-        className="bg-cyan-500/10 p-4 rounded-lg"
-        onClick={() => setSelectedUser(chat)}
-      >
-        ...
-      </div>
-    );
-  });
-
   return (
     <>
       {chats.map((chat) => (
