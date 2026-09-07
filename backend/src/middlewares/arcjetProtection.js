@@ -30,7 +30,6 @@ export const arcjetProtection = async (req, res, next) => {
                 spoofed: decision.results.some(isSpoofedBot),
                 results: decision.results
             });
-
             if (decision.reason.isRateLimit()) {
                 return res.status(403).json({
                     message: "Rate limit exceeded. Please try again later."
@@ -57,21 +56,20 @@ export const arcjetProtection = async (req, res, next) => {
                 spoofed: decision.results.some(isSpoofedBot),
                 results: decision.results
             });
-
             return res.status(403).json({
                 error: "Spoof bot detected",
                 message: "Malicious bot activity detected. Please try again later."
             });
         }
 
-        console.log({
-            userAgent: req.get("user-agent"),
-            ip: req.ip,
-            denied: decision.isDenied(),
-            reason: decision.reason,
-            spoofed: decision.results.some(isSpoofedBot),
-            results: decision.results
-        });
+        // console.log({
+        //     userAgent: req.get("user-agent"),
+        //     ip: req.ip,
+        //     denied: decision.isDenied(),
+        //     reason: decision.reason,
+        //     spoofed: decision.results.some(isSpoofedBot),
+        //     results: decision.results
+        // });
 
         next();
 
