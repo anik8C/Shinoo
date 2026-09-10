@@ -61,12 +61,12 @@ export const useChatStore = create((set, get) => ({
     },
 
     sendMessage: async (messageData) => {
-        const { selectedUser, messages } = get();
+        const { selectedUser } = get();
         const { authUser } = useAuthStore.getState();
 
         const tempId = `temp-${Date.now()}`;
 
-        const optimizedMessage = {
+        const optimisticMessage = {
             _id: tempId,
             senderId: authUser._id,
             receiverId: selectedUser._id,
@@ -76,15 +76,23 @@ export const useChatStore = create((set, get) => ({
             isOptimistic: true, // Flag to identify optimistic messages(optional)
         };
         // Immediately update the UI with the new message
-        set({ messages: [...messages, optimizedMessage] });
+        set((state) => ({ messages: [...state.messages, optimisticMessage] }));
 
         try {
-            const res = await axiosInstance.post(`/messages/send1/${selectedUser._id}`, messageData);
-            set({
-                messages: [...messages, res.data]
+            const res = await axiosInstance.post(`/messages/send123/${selectedUser._id}`, messageData);
+            set((state) => {
+                const idx = state.messages.findIndex(msg => msg._id === tempId);
+                if (idx === -1) {
+                    return { messages: [...state.messages, res.data] };
+                }
+
+                const nxt = [...state.messages];
+                nxt[idx] = res.data;
+                return { messages: nxt };
             });
         } catch (error) {
-            set({ messages: messages });
+            // console.log(error);
+            set((state) => ({ messages: state.messages.filter(msg => msg._id !== tempId) })); // Remove the optimistic message on error
             toast.error(error.response?.data?.message || "Something went wrong");
         }
     }
