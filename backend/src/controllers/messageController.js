@@ -44,12 +44,13 @@ export const sendMessage = async (req, res) => {
         const { text, image } = req.body;
 
         // if (!text && !image) {
-        //     return res.status()wwwwwwronqeeeeeeeeeeeee
+        //     return res.status()
         // }
 
         let imageURL;
         if (image) {
-            imageURL = await cloudinary.uploader.upload(image).secure_url;
+            const uploadResponse = await cloudinary.uploader.upload(image)
+            imageURL = uploadResponse.secure_url;
         }
 
         const message = await messageModel.create({
