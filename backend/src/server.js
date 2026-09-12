@@ -8,8 +8,8 @@ import authRoutes from "./routes/authRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import { connectDB } from "./lib/db.js";
+import { app, server } from "./lib/socket.js";
 
-const app = express();
 const __dirname = path.resolve();
 
 app.use(express.json({ limit: "5mb" }));
@@ -29,7 +29,7 @@ if (process.env.NODE_ENV === "development") {
     });
 }
 
-app.listen(process.env.PORT || 3000, () => {
+server.listen(process.env.PORT || 3000, () => {
     connectDB();
     console.log("Server is running on PORT: " + (process.env.PORT || 3000));
 })
