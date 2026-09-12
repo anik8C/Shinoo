@@ -79,7 +79,7 @@ export const useChatStore = create((set, get) => ({
         set((state) => ({ messages: [...state.messages, optimisticMessage] }));
 
         try {
-            const res = await axiosInstance.post(`/messages/send123/${selectedUser._id}`, messageData);
+            const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
             set((state) => {
                 const idx = state.messages.findIndex(msg => msg._id === tempId);
                 if (idx === -1) {
