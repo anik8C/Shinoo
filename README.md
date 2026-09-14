@@ -7,7 +7,6 @@ A modern, real-time chat application built with **Node.js**, **Express**, **Mong
 ![React](https://img.shields.io/badge/React-19-blue?logo=react)
 ![MongoDB](https://img.shields.io/badge/MongoDB-8-green?logo=mongodb)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8-red?logo=socket.io)
-![License](https://img.shields.io/badge/License-ISC-yellow)
 
 ---
 
