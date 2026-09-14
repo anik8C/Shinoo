@@ -5,15 +5,24 @@ import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
 import { useAuthStore } from "./store/useAuthStore.js";
 import PageLoader from "./components/PageLoader.jsx";
+import { useChatStore } from "./store/useChatStore.js";
 
 import { Toaster } from "react-hot-toast";
 
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
+  const { subscribeToNewMessages } = useChatStore();
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  useEffect(() => {
+    if (!authUser) return;
+    const unsubscribe = subscribeToNewMessages();
+
+    return unsubscribe;
+  }, [authUser, subscribeToNewMessages]);
 
   // console.log("AUTH USER:", authUser);
 

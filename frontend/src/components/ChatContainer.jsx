@@ -22,6 +22,11 @@ function ChatContainer() {
 
   useEffect(() => {
     getMessagesByUserId(selectedUser._id);
+    // subscribeToNewMessages();
+
+    // return () => {
+    //   unsubscribeFromNewMessages();
+    // };
   }, [selectedUser, getMessagesByUserId]);
 
   useEffect(() => {
