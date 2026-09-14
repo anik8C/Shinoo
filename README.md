@@ -1220,12 +1220,6 @@ This is a personal project. For bug reports or feature requests, please open an 
 
 ---
 
-## License
-
-ISC
-
----
-
 ## Quick Links
 
 - **Frontend Repository:** `/frontend`
