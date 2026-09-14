@@ -1,6 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import messageModel from "../models/messageModel.js"
 import userModel from "../models/userModel.js"
+import { getReceiverSocketIds, io } from "../lib/socket.js";
 
 
 export async function getAllContacts(req, res) {
@@ -59,6 +60,14 @@ export const sendMessage = async (req, res) => {
             text,
             image: imageURL
         });
+
+        // Emit the message to the receiver if they are online
+        const receiverSocketIds = getReceiverSocketIds(receiverId);
+        if (receiverSocketIds) {
+            receiverSocketIds.forEach((socketId) => {
+                io.to(socketId).emit("newMessage", message)
+            });
+        }
 
         return res.status(201).json(message);
 

@@ -70,15 +70,21 @@ function MessageInput() {
         onSubmit={handleSendMessage}
         className="max-w-3xl mx-auto flex space-x-4"
       >
-        <input
-          type="text"
+        <textarea
           value={text}
           onChange={(e) => {
             setText(e.target.value);
             isSoundEnabled && playKeyStrokeSound();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.form.requestSubmit();
+            }
+          }}
           className="flex-1 bg-slate-800/50 border-slate-700/50 rounded-lg py-2 px-4"
           placeholder="Type your message..."
+          rows={1}
         />
         <input
           type="file"
