@@ -10,6 +10,11 @@ function MessageInput() {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
   const { sendMessage, isSoundEnabled } = useChatStore();
+  const [isTouchPrimaryDevice] = useState(() => (
+    typeof window !== "undefined" &&
+    (window.matchMedia("(pointer: coarse)").matches ||
+      (navigator.maxTouchPoints || 0) > 0)
+  ));
 
   const fileInputRef = useRef(null);
 
@@ -77,7 +82,13 @@ function MessageInput() {
             isSoundEnabled && playKeyStrokeSound();
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
+            if (
+              e.key === "Enter" &&
+              !e.shiftKey &&
+              !e.isComposing &&
+              e.keyCode !== 229 &&
+              !isTouchPrimaryDevice
+            ) {
               e.preventDefault();
               e.currentTarget.form.requestSubmit();
             }
@@ -105,6 +116,8 @@ function MessageInput() {
         <button
           type="submit"
           disabled={!text.trim() && !imagePreview}
+          aria-label="Send message"
+          title="Send message"
           className="shrink-0 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg px-3 sm:px-4 py-2 font-medium hover:from-cyan-600 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <SendIcon className="w-5 h-5" />
