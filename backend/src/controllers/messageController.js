@@ -3,6 +3,21 @@ import messageModel from "../models/messageModel.js"
 import userModel from "../models/userModel.js"
 import { getReceiverSocketIds, io } from "../lib/socket.js";
 
+function emitMessagesRead({ readerId, senderId, messageIds, readAt }) {
+    const socketIds = new Set([
+        ...(getReceiverSocketIds(readerId.toString()) || []),
+        ...(getReceiverSocketIds(senderId.toString()) || [])
+    ]);
+    const event = {
+        readerId: readerId.toString(),
+        senderId: senderId.toString(),
+        conversationId: senderId.toString(),
+        messageIds: messageIds.map((id) => id.toString()),
+        readAt
+    };
+    socketIds.forEach((socketId) => io.to(socketId).emit("messagesRead", event));
+}
+
 
 export async function getAllContacts(req, res) {
 
@@ -41,17 +56,15 @@ export const getMessageByUser = async (req, res) => {
                 { $set: { readAt } }
             );
             if (updateResult.modifiedCount) {
-                const senderSocketIds = getReceiverSocketIds(userToChatId);
-                senderSocketIds?.forEach((socketId) => {
-                    io.to(socketId).emit("messagesRead", {
-                        readerId: myId.toString(),
-                        messageIds: unreadMessages.map(({ _id }) => _id.toString()),
-                        readAt
-                    });
+                emitMessagesRead({
+                    readerId: myId,
+                    senderId: userToChatId,
+                    messageIds: unreadMessages.map(({ _id }) => _id),
+                    readAt
                 });
             }
         }
-        const getMessagesByUserId = await messageModel.find(conversationFilter);
+        const getMessagesByUserId = await messageModel.find(conversationFilter).sort({ createdAt: 1 });
 
         return res.status(200).json(getMessagesByUserId);
 
@@ -78,13 +91,11 @@ export const markMessagesRead = async (req, res) => {
             { $set: { readAt } }
         );
         if (updateResult.modifiedCount) {
-            const senderSocketIds = getReceiverSocketIds(senderId);
-            senderSocketIds?.forEach((socketId) => {
-                io.to(socketId).emit("messagesRead", {
-                    readerId: readerId.toString(),
-                    messageIds: unreadMessages.map(({ _id }) => _id.toString()),
-                    readAt
-                });
+            emitMessagesRead({
+                readerId,
+                senderId,
+                messageIds: unreadMessages.map(({ _id }) => _id),
+                readAt
             });
         }
         return res.status(200).json({ messageIds: unreadMessages.map(({ _id }) => _id.toString()), readAt });
@@ -139,21 +150,29 @@ export async function getAllChatPartners(req, res) {
 
         const messages = await messageModel.find({
             $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }]
-        });
+        }).sort({ createdAt: -1 }).lean();
 
-        const chatPartnerIds = [
-            ...new Set(
-                messages.map((msg) => {
-                    return loggedInUserId.toString() === msg.senderId.toString()
-                        ? msg.receiverId.toString()
-                        : msg.senderId.toString()
-                })
-            )
-        ];
+        const partnerMetadata = new Map();
+        for (const message of messages) {
+            const isSentByMe = message.senderId.toString() === loggedInUserId.toString();
+            const partnerId = (isSentByMe ? message.receiverId : message.senderId).toString();
+            const metadata = partnerMetadata.get(partnerId) || {
+                latestMessageAt: message.createdAt,
+                unreadCount: 0
+            };
+            if (!isSentByMe && !message.readAt) metadata.unreadCount += 1;
+            partnerMetadata.set(partnerId, metadata);
+        }
 
-        const chatPartners = await userModel.find({ _id: { $in: chatPartnerIds } }).select("-password");
+        const chatPartners = await userModel.find({ _id: { $in: [...partnerMetadata.keys()] } })
+            .select("-password")
+            .lean();
+        const chats = chatPartners.map((partner) => ({
+            ...partner,
+            ...partnerMetadata.get(partner._id.toString())
+        })).sort((a, b) => new Date(b.latestMessageAt) - new Date(a.latestMessageAt));
 
-        return res.status(200).json(chatPartners);
+        return res.status(200).json(chats);
     }
 
     catch (error) {

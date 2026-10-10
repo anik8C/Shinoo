@@ -3,6 +3,7 @@ import { useChatStore } from "../store/useChatStore";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
 import NoChatsFound from "./NoChatsFound";
 import { useAuthStore } from "../store/useAuthStore";
+import ProfilePictureViewer from "./ProfilePictureViewer";
 
 function ChatsList() {
   const { getAllChatPartners, chats, isUsersLoading, setSelectedUser } =
@@ -30,15 +31,17 @@ function ChatsList() {
               className={`avatar ${onlineUsers.includes(chat._id) ? "online" : "offline"}`}
             >
               <div className="size-12 rounded-full">
-                <img
-                  src={chat.profilePic || "avatar.png"}
-                  alt={chat.fullName}
-                />
+                <ProfilePictureViewer src={chat.profilePic} alt={chat.fullName} />
               </div>
             </div>
             <h4 className="text-slate-200 font-medium truncate">
               {chat.fullName}
             </h4>
+            {chat.unreadCount > 0 && (
+              <span className="ml-auto shrink-0 rounded-full bg-cyan-500 px-2 py-0.5 text-xs font-semibold text-slate-950">
+                {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+              </span>
+            )}
           </div>
         </div>
       ))}

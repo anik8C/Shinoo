@@ -2,6 +2,7 @@ import { useChatStore } from "../store/useChatStore";
 import { useEffect } from "react";
 import UsersLoadingSkeleton from "./UsersLoadingSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
+import ProfilePictureViewer from "./ProfilePictureViewer";
 
 function ContactList() {
   const { allContacts, setSelectedUser, getAllContacts, isUsersLoading } =
@@ -27,10 +28,7 @@ function ContactList() {
               className={`avatar ${onlineUsers.includes(contact._id) ? "online" : "offline"}`}
             >
               <div className="size-12 rounded-full">
-                <img
-                  src={contact.profilePic || "avatar.png"}
-                  alt={contact.fullName}
-                />
+                <ProfilePictureViewer src={contact.profilePic} alt={contact.fullName} />
               </div>
             </div>
             <h4 className="text-slate-200 font-medium truncate">
