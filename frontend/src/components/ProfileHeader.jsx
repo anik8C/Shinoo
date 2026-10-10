@@ -27,9 +27,9 @@ function ProfileHeader() {
   };
 
   return (
-    <div className="p-6 border-b border-slate-700/50">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="p-4 sm:p-6 border-b border-slate-700/50 shrink-0">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {/*AVATAR*/}
           <div className="avatar online">
             <button
@@ -57,7 +57,7 @@ function ProfileHeader() {
 
           {/*USERNAME & ONLINE TEXT*/}
           <div>
-            <h3 className="text-lg font-medium text-base max-w-[180px] truncate">
+            <h3 className="text-base sm:text-lg font-medium text-slate-200 max-w-[140px] sm:max-w-[180px] truncate">
               {authUser?.fullName}
             </h3>
             <p className="text-xs text-slate-400">Online</p>
@@ -65,7 +65,7 @@ function ProfileHeader() {
         </div>
 
         {/*BUTTONS*/}
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-3 sm:gap-4 items-center shrink-0">
           {/* LOGOUT BTN*/}
           <button
             className="text-slate-400 hover:text-slate-200 transition-colors"

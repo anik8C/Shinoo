@@ -7,6 +7,7 @@ export const useChatStore = create((set, get) => ({
     chats: [],
     allContacts: [],
     messages: [],
+    deletedMessageIds: new Set(),
     selectedUser: null,
     activeTab: "chats",
     isUsersLoading: false,
@@ -52,11 +53,43 @@ export const useChatStore = create((set, get) => ({
         set({ isMessagesLoading: true, messages: [] });
         try {
             const res = await axiosInstance.get(`/messages/${userId}`);
-            set({ messages: res.data });
+            const { deletedMessageIds } = get();
+            set({
+                messages: res.data.filter((message) => !deletedMessageIds.has(message._id))
+            });
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         } finally {
             set({ isMessagesLoading: false });
+        }
+    },
+
+    removeMessage: (messageId) => {
+        set((state) => {
+            const deletedMessageIds = new Set(state.deletedMessageIds);
+            deletedMessageIds.add(messageId);
+            return {
+                deletedMessageIds,
+                messages: state.messages.filter((message) => message._id !== messageId)
+            };
+        });
+    },
+
+    markMessagesRead: async (userId) => {
+        if (!userId) return;
+        try {
+            const res = await axiosInstance.patch(`/messages/${userId}/read`);
+            if (!res.data.messageIds?.length) return;
+            const readIds = new Set(res.data.messageIds);
+            set((state) => ({
+                messages: state.messages.map((message) =>
+                    readIds.has(message._id)
+                        ? { ...message, readAt: res.data.readAt }
+                        : message
+                )
+            }));
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Unable to update read status");
         }
     },
 
@@ -142,13 +175,41 @@ export const useChatStore = create((set, get) => ({
                     return { messages: [...state.messages, message] }
                 }
                 );
+                if (message.senderId === selectedUser._id && message.receiverId === authUser._id) {
+                    get().markMessagesRead(selectedUser._id);
+                }
             }
         }
 
         socket.on("newMessage", handleNewMessage);
+        const handleMessagesRead = ({ readerId, messageIds, readAt }) => {
+            const { selectedUser } = get();
+            if (!selectedUser || selectedUser._id !== readerId) return;
+            const readIds = new Set(messageIds);
+            set((state) => ({
+                messages: state.messages.map((message) =>
+                    readIds.has(message._id)
+                        ? { ...message, readAt }
+                        : message
+                )
+            }));
+        };
+        const handleMessageDeleted = ({ messageId, senderId, receiverId }) => {
+            const authUser = useAuthStore.getState().authUser;
+            const { selectedUser } = get();
+            if (!authUser || !selectedUser) return;
+            const isParticipant =
+                (senderId === authUser._id && receiverId === selectedUser._id) ||
+                (receiverId === authUser._id && senderId === selectedUser._id);
+            if (isParticipant) get().removeMessage(messageId);
+        };
+        socket.on("messagesRead", handleMessagesRead);
+        socket.on("messageDeleted", handleMessageDeleted);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
+            socket.off("messagesRead", handleMessagesRead);
+            socket.off("messageDeleted", handleMessageDeleted);
         }
     },
 

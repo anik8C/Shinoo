@@ -22,18 +22,74 @@ export const getMessageByUser = async (req, res) => {
     try {
         const myId = req.user._id;
         const { id: userToChatId } = req.params;
-        const getMessagesByUserId = await messageModel.find({
+        const conversationFilter = {
             $or:
                 [
                     { senderId: myId, receiverId: userToChatId },
                     { senderId: userToChatId, receiverId: myId }
                 ]
-        })
+        };
+        const unreadMessages = await messageModel.find({
+            senderId: userToChatId,
+            receiverId: myId,
+            readAt: null
+        }).select("_id");
+        const readAt = new Date();
+        if (unreadMessages.length) {
+            const updateResult = await messageModel.updateMany(
+                { _id: { $in: unreadMessages.map(({ _id }) => _id) }, readAt: null },
+                { $set: { readAt } }
+            );
+            if (updateResult.modifiedCount) {
+                const senderSocketIds = getReceiverSocketIds(userToChatId);
+                senderSocketIds?.forEach((socketId) => {
+                    io.to(socketId).emit("messagesRead", {
+                        readerId: myId.toString(),
+                        messageIds: unreadMessages.map(({ _id }) => _id.toString()),
+                        readAt
+                    });
+                });
+            }
+        }
+        const getMessagesByUserId = await messageModel.find(conversationFilter);
 
         return res.status(200).json(getMessagesByUserId);
 
     } catch (error) {
         console.error("Error in getMessageByUser:", error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const markMessagesRead = async (req, res) => {
+    try {
+        const readerId = req.user._id;
+        const { id: senderId } = req.params;
+        const unreadMessages = await messageModel.find({
+            senderId,
+            receiverId: readerId,
+            readAt: null
+        }).select("_id");
+        if (!unreadMessages.length) return res.status(200).json({ messageIds: [] });
+
+        const readAt = new Date();
+        const updateResult = await messageModel.updateMany(
+            { _id: { $in: unreadMessages.map(({ _id }) => _id) }, readAt: null },
+            { $set: { readAt } }
+        );
+        if (updateResult.modifiedCount) {
+            const senderSocketIds = getReceiverSocketIds(senderId);
+            senderSocketIds?.forEach((socketId) => {
+                io.to(socketId).emit("messagesRead", {
+                    readerId: readerId.toString(),
+                    messageIds: unreadMessages.map(({ _id }) => _id.toString()),
+                    readAt
+                });
+            });
+        }
+        return res.status(200).json({ messageIds: unreadMessages.map(({ _id }) => _id.toString()), readAt });
+    } catch (error) {
+        console.error("Error in markMessagesRead:", error);
         return res.status(500).json({ message: "Server Error" });
     }
 };
@@ -104,4 +160,42 @@ export async function getAllChatPartners(req, res) {
         console.error("Error in getAllChatPartners: ", error);
         return res.status(500).json({ error: "Internal server error" });
     }
+}
+
+export async function deleteMessage(req, res) {
+
+    try {
+        const { messageId } = req.params;
+        const deletedMessage = await messageModel.findOneAndDelete({ _id: messageId, senderId: req.user._id });
+
+        if (!deletedMessage) return res.status(404).json({ message: "Message not found or unauthorized" });
+
+        const messageDeletedEvent = {
+            messageId: deletedMessage._id.toString(),
+            senderId: deletedMessage.senderId.toString(),
+            receiverId: deletedMessage.receiverId.toString()
+        };
+        const socketIds = new Set([
+            ...(getReceiverSocketIds(deletedMessage.senderId.toString()) || []),
+            ...(getReceiverSocketIds(deletedMessage.receiverId.toString()) || [])
+        ]);
+        socketIds.forEach((socketId) => {
+            io.to(socketId).emit("messageDeleted", messageDeletedEvent);
+        });
+
+        return res.status(200).json({ message: "Message deleted successfully", deletedMessage });
+
+
+    } catch (error) {
+        console.error("Error in deleteMessage: ", error);
+
+        if (error.name === "CastError") {
+            return res.status(400).json({
+                message: "Invalid message ID"
+            });
+        }
+
+        return res.status(500).json({ error: "Internal server error" });
+    }
+
 }
