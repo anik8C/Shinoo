@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 
-function signupPage() {
+function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -162,4 +162,4 @@ function signupPage() {
   );
 }
 
-export default signupPage;
+export default SignUpPage;
