@@ -30,7 +30,7 @@ function ChatsList() {
             <div
               className={`avatar ${onlineUsers.includes(chat._id) ? "online" : "offline"}`}
             >
-              <div className="size-12 rounded-full">
+              <div className="size-12 aspect-square shrink-0 overflow-hidden rounded-full">
                 <ProfilePictureViewer src={chat.profilePic} alt={chat.fullName} />
               </div>
             </div>

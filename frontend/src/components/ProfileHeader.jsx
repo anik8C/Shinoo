@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
+import { LogOutIcon, PlusIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { useChatStore } from "../store/useChatStore.js";
 import ProfilePictureViewer from "./ProfilePictureViewer";
@@ -32,8 +32,8 @@ function ProfileHeader() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {/*AVATAR*/}
-          <div className="avatar online relative">
-            <div className="size-14 rounded-full">
+          <div className="avatar online relative size-14 shrink-0">
+            <div className="size-14 aspect-square overflow-hidden rounded-full">
               <ProfilePictureViewer
                 src={selectedImg || authUser?.profilePic}
                 alt="User image"
@@ -41,10 +41,15 @@ function ProfileHeader() {
             </div>
             <button
               type="button"
-              className="absolute -bottom-1 -right-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-200"
-              onClick={() => fileInputRef.current.click()}
+              className="absolute -bottom-1 -right-3 z-10 flex size-5 items-center justify-center rounded-full border border-slate-900 bg-slate-700 text-slate-200 transition-colors hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              onClick={(event) => {
+                event.stopPropagation();
+                fileInputRef.current.click();
+              }}
+              aria-label="Change profile picture"
+              title="Change profile picture"
             >
-              Change
+              <PlusIcon className="size-3.5" strokeWidth={2.5} />
             </button>
 
             <input

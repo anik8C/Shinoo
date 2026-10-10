@@ -27,7 +27,7 @@ function ContactList() {
             <div
               className={`avatar ${onlineUsers.includes(contact._id) ? "online" : "offline"}`}
             >
-              <div className="size-12 rounded-full">
+              <div className="size-12 aspect-square shrink-0 overflow-hidden rounded-full">
                 <ProfilePictureViewer src={contact.profilePic} alt={contact.fullName} />
               </div>
             </div>

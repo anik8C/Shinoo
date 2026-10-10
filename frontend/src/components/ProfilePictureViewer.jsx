@@ -18,14 +18,18 @@ function ProfilePictureViewer({ src, alt }) {
     <>
       <button
         type="button"
-        className="block rounded-full"
+        className="block size-full aspect-square shrink-0 overflow-hidden rounded-full"
         onClick={(event) => {
           event.stopPropagation();
           setIsOpen(true);
         }}
         aria-label={`View ${alt}'s profile picture`}
       >
-        <img src={imageSrc} alt={alt} className="size-full rounded-full object-cover" />
+        <img
+          src={imageSrc}
+          alt={alt}
+          className="block size-full min-w-0 min-h-0 object-cover"
+        />
       </button>
       {isOpen && (
         <div
