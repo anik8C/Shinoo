@@ -1,6 +1,7 @@
 import { XIcon } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 import { useAuthStore } from "../store/useAuthStore";
+import ProfilePictureViewer from "./ProfilePictureViewer";
 
 function ChatHeader() {
   const { selectedUser, setSelectedUser } = useChatStore();
@@ -12,10 +13,7 @@ function ChatHeader() {
       <div className="flex items-center space-x-3">
         <div className={`avatar ${isUserOnline ? "online" : "offline"}`}>
           <div className="w-10 sm:w-12 rounded-full">
-            <img
-              src={selectedUser.profilePic || "/avatar.png"}
-              alt={selectedUser.fullName}
-            />
+            <ProfilePictureViewer src={selectedUser.profilePic} alt={selectedUser.fullName} />
           </div>
         </div>
         <div>

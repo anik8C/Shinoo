@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { LogOutIcon, VolumeOffIcon, Volume2Icon } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { useChatStore } from "../store/useChatStore.js";
+import ProfilePictureViewer from "./ProfilePictureViewer";
 
 const mouseClickSound = new Audio("/sounds/mouse-click.mp3");
 
@@ -31,19 +32,19 @@ function ProfileHeader() {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {/*AVATAR*/}
-          <div className="avatar online">
+          <div className="avatar online relative">
+            <div className="size-14 rounded-full">
+              <ProfilePictureViewer
+                src={selectedImg || authUser?.profilePic}
+                alt="User image"
+              />
+            </div>
             <button
-              className="relative size-14 rounded-full overflow-hidden"
+              type="button"
+              className="absolute -bottom-1 -right-2 rounded bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-200"
               onClick={() => fileInputRef.current.click()}
             >
-              <img
-                src={selectedImg || authUser?.profilePic || "/avatar.png"}
-                alt="User image"
-                className="size-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                <span className="text-white text-sm">Change</span>
-              </div>
+              Change
             </button>
 
             <input

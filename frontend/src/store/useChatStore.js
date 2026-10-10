@@ -8,10 +8,12 @@ export const useChatStore = create((set, get) => ({
     allContacts: [],
     messages: [],
     deletedMessageIds: new Set(),
+    receivedMessageIds: new Set(),
     selectedUser: null,
     activeTab: "chats",
     isUsersLoading: false,
     isMessagesLoading: false,
+    messageRequestId: 0,
     isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
 
     toggleSound: () => {
@@ -40,7 +42,21 @@ export const useChatStore = create((set, get) => ({
 
         try {
             const res = await axiosInstance.get("/messages/chats");
-            set({ chats: res.data });
+            set((state) => {
+                const currentById = new Map(state.chats.map((chat) => [chat._id, chat]));
+                const chats = res.data.map((chat) => {
+                    const current = currentById.get(chat._id);
+                    if (!current || new Date(chat.latestMessageAt) >= new Date(current.latestMessageAt)) {
+                        return chat;
+                    }
+                    return { ...chat, ...current };
+                });
+                return {
+                    chats: chats.sort(
+                        (a, b) => new Date(b.latestMessageAt) - new Date(a.latestMessageAt)
+                    )
+                };
+            });
         } catch (error) {
             toast.error(error.response.data.message);
         } finally {
@@ -50,17 +66,29 @@ export const useChatStore = create((set, get) => ({
 
     getMessagesByUserId: async (userId) => {
         if (!userId) return;
-        set({ isMessagesLoading: true, messages: [] });
+        const requestId = get().messageRequestId + 1;
+        set({ isMessagesLoading: true, messages: [], messageRequestId: requestId });
         try {
             const res = await axiosInstance.get(`/messages/${userId}`);
+            if (get().messageRequestId !== requestId || get().selectedUser?._id !== userId) return;
             const { deletedMessageIds } = get();
+            const messagesById = new Map(
+                get().messages
+                    .filter((message) => !deletedMessageIds.has(message._id))
+                    .map((message) => [message._id, message])
+            );
+            res.data.forEach((message) => messagesById.set(message._id, message));
             set({
-                messages: res.data.filter((message) => !deletedMessageIds.has(message._id))
+                messages: [...messagesById.values()]
+                    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
+                chats: get().chats.map((chat) =>
+                    chat._id === userId ? { ...chat, unreadCount: 0 } : chat
+                )
             });
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
         } finally {
-            set({ isMessagesLoading: false });
+            if (get().messageRequestId === requestId) set({ isMessagesLoading: false });
         }
     },
 
@@ -77,6 +105,11 @@ export const useChatStore = create((set, get) => ({
 
     markMessagesRead: async (userId) => {
         if (!userId) return;
+        set((state) => ({
+            chats: state.chats.map((chat) =>
+                chat._id === userId ? { ...chat, unreadCount: 0 } : chat
+            )
+        }));
         try {
             const res = await axiosInstance.patch(`/messages/${userId}/read`);
             if (!res.data.messageIds?.length) return;
@@ -108,8 +141,21 @@ export const useChatStore = create((set, get) => ({
             createdAt: new Date().toISOString(),
             isOptimistic: true, // Flag to identify optimistic messages(optional)
         };
+        const moveChatToTop = (message) => set((state) => {
+            const existing = state.chats.find((chat) => chat._id === selectedUser._id);
+            if (!existing) return state;
+            const updated = {
+                ...existing,
+                latestMessageAt: message.createdAt,
+                unreadCount: 0
+            };
+            return {
+                chats: [updated, ...state.chats.filter((chat) => chat._id !== selectedUser._id)]
+            };
+        });
         // Immediately update the UI with the new message
         set((state) => ({ messages: [...state.messages, optimisticMessage] }));
+        moveChatToTop(optimisticMessage);
 
         try {
             const res = await axiosInstance.post(`/messages/send/${selectedUser._id}`, messageData);
@@ -123,6 +169,7 @@ export const useChatStore = create((set, get) => ({
                 nxt[idx] = res.data;
                 return { messages: nxt };
             });
+            moveChatToTop(res.data);
         } catch (error) {
             // console.log(error);
             set((state) => ({ messages: state.messages.filter(msg => msg._id !== tempId) })); // Remove the optimistic message on error
@@ -155,7 +202,18 @@ export const useChatStore = create((set, get) => ({
 
             const { selectedUser, isSoundEnabled } = get();
             const authUser = useAuthStore.getState().authUser;
-
+            if (!authUser) return;
+            let isDuplicate = false;
+            set((state) => {
+                if (state.receivedMessageIds.has(message._id)) {
+                    isDuplicate = true;
+                    return state;
+                }
+                const receivedMessageIds = new Set(state.receivedMessageIds);
+                receivedMessageIds.add(message._id);
+                return { receivedMessageIds };
+            });
+            if (isDuplicate) return;
 
             const isMessageForMe = message.receiverId === authUser._id;
             if (isMessageForMe && isSoundEnabled) {
@@ -165,9 +223,35 @@ export const useChatStore = create((set, get) => ({
                 notificationSound.play().catch((e) => console.log("Error playing sound:", e));
             }
 
-            if (!selectedUser) return;
+            const isConversationMessage =
+                message.senderId === authUser._id || message.receiverId === authUser._id;
+            if (!isConversationMessage) return;
 
-            if ((message.senderId === selectedUser._id && message.receiverId === authUser._id) || (message.senderId === authUser._id && message.receiverId === selectedUser._id)) {
+            const partnerId = message.senderId === authUser._id
+                ? message.receiverId
+                : message.senderId;
+            const isActiveConversation = selectedUser?._id === partnerId;
+            set((state) => {
+                const existing = state.chats.find((chat) => chat._id === partnerId);
+                if (!existing) return state;
+                const updated = {
+                    ...existing,
+                    latestMessageAt: message.createdAt,
+                    unreadCount: message.receiverId === authUser._id && !isActiveConversation
+                        ? (existing.unreadCount || 0) + 1
+                        : existing.unreadCount || 0
+                };
+                return {
+                    chats: [updated, ...state.chats.filter((chat) => chat._id !== partnerId)]
+                };
+            });
+
+            if (!isActiveConversation) {
+                if (!get().chats.some((chat) => chat._id === partnerId)) get().getAllChatPartners();
+                return;
+            }
+
+            if (selectedUser && ((message.senderId === selectedUser._id && message.receiverId === authUser._id) || (message.senderId === authUser._id && message.receiverId === selectedUser._id))) {
                 set((state) => {
                     const exists = state.messages.some(msg => msg._id === message._id);
                     if (exists) return state; // Prevent duplicate messages in case of race condition while lodaing initial chat history initially and receiving a new message at the same time.
@@ -182,7 +266,16 @@ export const useChatStore = create((set, get) => ({
         }
 
         socket.on("newMessage", handleNewMessage);
-        const handleMessagesRead = ({ readerId, messageIds, readAt }) => {
+        const handleMessagesRead = ({ readerId, senderId, conversationId, messageIds, readAt }) => {
+            const authUser = useAuthStore.getState().authUser;
+            if (readerId === authUser?._id) {
+                const partnerId = conversationId || senderId;
+                set((state) => ({
+                    chats: state.chats.map((chat) =>
+                        chat._id === partnerId ? { ...chat, unreadCount: 0 } : chat
+                    )
+                }));
+            }
             const { selectedUser } = get();
             if (!selectedUser || selectedUser._id !== readerId) return;
             const readIds = new Set(messageIds);
