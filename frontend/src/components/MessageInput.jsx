@@ -82,13 +82,12 @@ function MessageInput() {
             isSoundEnabled && playKeyStrokeSound();
           }}
           onKeyDown={(e) => {
-            if (
-              e.key === "Enter" &&
-              !e.shiftKey &&
-              !e.isComposing &&
-              e.keyCode !== 229 &&
-              !isTouchPrimaryDevice
-            ) {
+            if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+
+            const shouldSend =
+              isTouchPrimaryDevice ? e.shiftKey : !e.shiftKey;
+
+            if (shouldSend) {
               e.preventDefault();
               e.currentTarget.form.requestSubmit();
             }
