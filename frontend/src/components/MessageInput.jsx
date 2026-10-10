@@ -13,7 +13,7 @@ function MessageInput() {
   const [isTouchPrimaryDevice] = useState(() => (
     typeof window !== "undefined" &&
     (window.matchMedia("(pointer: coarse)").matches ||
-      (navigator.maxTouchPoints || 0) > 0)
+      (typeof navigator !== "undefined" && (navigator.maxTouchPoints || 0) > 0))
   ));
 
   const fileInputRef = useRef(null);
@@ -34,6 +34,7 @@ function MessageInput() {
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
+    if (!file) return;
 
     if (!file.type.startsWith("image/")) {
       toast.error("Please select a valid image file.");
@@ -82,7 +83,12 @@ function MessageInput() {
             isSoundEnabled && playKeyStrokeSound();
           }}
           onKeyDown={(e) => {
-            if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return;
+            if (
+              e.key !== "Enter" ||
+              e.repeat ||
+              e.isComposing ||
+              e.keyCode === 229
+            ) return;
 
             const shouldSend =
               isTouchPrimaryDevice ? e.shiftKey : !e.shiftKey;
